@@ -53,7 +53,7 @@ int main(){
 
 	//shuffle deck
     srand(time(0));
-    std::random_shuffle(deck.begin(), deck.end());
+    random_shuffle(deck.begin(), deck.end());
 
 	//deal to 4 players
 	vector<Player> players(4);
