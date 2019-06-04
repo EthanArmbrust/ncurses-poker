@@ -9,6 +9,8 @@
 #endif
 #include <locale.h>
 #include <wchar.h>
+#include <cstdlib>
+#include <ctime>
 
 using namespace std;
 
@@ -39,6 +41,8 @@ wchar_t print_suit_w(Suit s);
 string print_value(int val);
 vector<wstring> draw_card(Card c);
 
+bool check_pair(vector<Card> &cards);
+
 int main(){
 	
 	//create deck
@@ -52,12 +56,18 @@ int main(){
 	}
 
 	//shuffle deck
-    srand(time(0));
-    random_shuffle(deck.begin(), deck.end());
+	random_device rd;
+	mt19937 gen(rd());
+	shuffle(deck.begin(), deck.end(), gen);
 
 	//deal to 4 players
 	vector<Player> players(4);
+	vector<string> playernames;
     vector<Card> table;
+
+	for(int i = 0; i < 4; i++){
+		playernames.push_back("Player " + to_string(i+1));
+	}
 
 	for(Player &p : players){
 		p.hand.push_back(deck.back());
@@ -97,10 +107,16 @@ int main(){
     playerpos.push_back({(y * 0.3) - CARD_HEIGHT, (x * 0.5) - CARD_WIDTH});
     playerpos.push_back({(y * 0.5) - (CARD_HEIGHT / 2), (x * 0.8) - CARD_WIDTH});
 
+	vector<pair<int,int>> nameplates;
+	for(int i = 0; i < playerpos.size(); i++){
+		nameplates.push_back({playerpos[i].first + CARD_HEIGHT, playerpos[i].second});
+	}
+
 
     for(unsigned j = 0; j < playerpos.size(); j++){
         auto card_draw = draw_card(players[j].hand[0]);
         auto card2_draw = draw_card(players[j].hand[1]);
+		string player_name = playernames[j];
 
         for(unsigned i = 0; i < card_draw.size(); i++){
             mvaddwstr(playerpos[j].first + i, playerpos[j].second, card_draw[i].c_str());
@@ -109,6 +125,9 @@ int main(){
         for(unsigned i = 0; i < card2_draw.size(); i++){
             mvaddwstr(playerpos[j].first + i, playerpos[j].second + CARD_WIDTH, card2_draw[i].c_str());
         }
+		int half = playerpos[j].second + CARD_WIDTH;
+		int centered = half - (player_name.length() / 2);
+		mvaddstr(nameplates[j].first, centered, player_name.c_str());
     };
 
     int table_y = (y * 0.5) - (CARD_HEIGHT / 2);
@@ -121,6 +140,21 @@ int main(){
             mvaddwstr(table_y + j, table_x + (i * CARD_WIDTH), card_img[j].c_str());
         }
     }
+
+	string player1_test = "Player 1 has pair? ";
+	vector<Card> complete;
+	complete.reserve(table.size() + players[0].hand.size());
+	complete.insert(complete.end(), table.begin(), table.end());
+	complete.insert(complete.end(), players[0].hand.begin(), players[0].hand.end());
+
+	if(check_pair(complete)){
+		player1_test += "Yes";
+	}
+	else{
+		player1_test += "No";
+	}
+
+	mvaddstr(y - 1, 0, player1_test.c_str());
 
 	getch();	
 	endwin();
@@ -206,3 +240,15 @@ vector<wstring> draw_card(Card c){
 	return output;
 }
 
+bool check_pair(vector<Card> &cards){
+	for(int i = 0; i < cards.size(); i++){
+		Card &c = cards[i];
+		for(int j = i + 1; j < cards.size(); j++){
+			Card &d = cards[j];
+			if(c.value == d.value){
+				return true;
+			}
+		}
+	}
+	return false;
+}
